@@ -1,4 +1,4 @@
-# Extract-JPSZipFolders.ps1
+﻿# Extract-JPSZipFolders.ps1
 #
 # e-Govで電子送達される社会保険関連ZIPを、
 # 種類と年月で整理して展開するPowerShellスクリプト。
@@ -54,7 +54,12 @@ function Test-WritableFolder {
         return $false
     }
 
-    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+    try {
+        if (-not (Test-Path -LiteralPath $Path -PathType Container -ErrorAction Stop)) {
+            return $false
+        }
+    }
+    catch {
         return $false
     }
 
@@ -311,8 +316,41 @@ function Confirm-And-Extract {
         }
     }
     catch {
+        $firstErrorMessage = $_.Exception.Message
+        $desktopPath = [Environment]::GetFolderPath("Desktop")
+
+        if ($outputRoot -ne $desktopPath) {
+            Write-Host "  WARN: 優先展開先への展開に失敗しました。Desktopへ切り替えます。" -ForegroundColor Yellow
+            Write-Host "        $firstErrorMessage" -ForegroundColor Yellow
+
+            try {
+                $actualName = Get-UniqueFolderName -ParentPath $desktopPath -BaseName $safeName
+                $destDir = Join-Path $desktopPath $actualName
+
+                New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+                Extract-ZipDirectory -Archive $Archive -SourceDir $SourceDir -DestinationDir $destDir
+                Write-Host "  OK: $destDir" -ForegroundColor Green
+
+                return [pscustomobject]@{
+                    Success    = $true
+                    ParentPath = $desktopPath
+                    DestDir    = $destDir
+                }
+            }
+            catch {
+                Write-Host "  NG: Desktopへの展開にも失敗しました。" -ForegroundColor Red
+                Write-Host "      $($_.Exception.Message)" -ForegroundColor Red
+
+                return [pscustomobject]@{
+                    Success    = $false
+                    ParentPath = $null
+                    DestDir    = $null
+                }
+            }
+        }
+
         Write-Host "  NG: $displaySourceDir" -ForegroundColor Red
-        Write-Host "      $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "      $firstErrorMessage" -ForegroundColor Red
 
         return [pscustomobject]@{
             Success    = $false
