@@ -1,4 +1,4 @@
-﻿# Extract-JPSZipFolders.ps1
+# Extract-JPSZipFolders.ps1
 #
 # e-Govで電子送達される社会保険関連ZIPを、
 # 種類と年月で整理して展開するPowerShellスクリプト。
@@ -523,7 +523,7 @@ try {
                     continue
                 }
 
-                if ($appTitle -match '_(.+?)\(') {
+                if ($appTitle -match '^被保険者データ_(.+?)\(') {
                     $part = $Matches[1]
                     $newFolderName = "${part}被保険者データ"
 
@@ -542,7 +542,7 @@ try {
                     }
                 }
                 else {
-                    Write-Host "  SKIP: APPTITLEから年月部分を取得できません。" -ForegroundColor Yellow
+                    Write-Host "  SKIP: APPTITLEから被保険者データの年月部分を取得できません。" -ForegroundColor Yellow
                     Write-Host "    $appTitle"
                 }
             }
